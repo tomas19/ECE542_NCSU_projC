@@ -83,3 +83,21 @@ def upsampleData(dct):
         dct_ups[f'subject_{k+1}'] = dfout
     
     return dct_ups
+
+def balanceData(dct, threshold = 2):
+
+    dctBal = {f'subject_{k+1}':pd.DataFrame(index = range(1, 9), columns = range(0, 4), data = 0) for k in range(8)}
+
+    for k in dctBal.keys():
+
+        for i in dct[k].index:
+            aux = dct[k].loc[i, :]
+            aux2 = aux.sort_values(ascending = False)
+            aux2.iloc[0] = aux2.iloc[1]
+
+            if aux2.iloc[1] > threshold * aux2.iloc[2]:
+                aux2.iloc[0] = threshold * aux2.iloc[2]
+                aux2.iloc[1] = threshold * aux2.iloc[2]
+
+            dctBal[k].loc[i, aux2.index] = aux2.values
+    return dctBal
