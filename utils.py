@@ -101,3 +101,52 @@ def balanceData(dct, threshold = 2):
 
             dctBal[k].loc[i, aux2.index] = aux2.values
     return dctBal
+
+def read_data_testing(pathin):
+    ''''''
+    # Define the header names for the 'x' CSV files
+    x_header = ["accx", "accy", "accz", "gyrox", "gyroy", "gyroz"]
+    # Define the header names for the 'x_time' CSV files
+    x_time_header = ["seconds"]
+
+    # Define the header names for the 'y' CSV files
+    # y_header = ["class"]
+
+    # Define the header names for the 'y_time' CSV files
+    y_time_header = ["seconds"]
+
+    # Create an empty list to store the dataframes
+    dct = {}
+
+    filesAll = [x for x in os.listdir(pathin) if x.endswith('.csv')]
+
+    nSubjects = 4
+
+    for i in range(9, 13):
+        files = sorted([x for x in filesAll if x.startswith(f'subject_{i:03d}')])
+        nSessions = int(len(files)/3) ## 4 files per session
+        
+        xdataAll = []
+        ydataAll = []
+
+        for j in range(nSessions):
+            xdata = pd.read_csv(pathin/f'subject_{i+1:03d}_{j+1:02d}__x.csv', header = None, names = x_header)
+            xdata['session'] = [j+1]*len(xdata)
+            xtime = pd.read_csv(pathin/f'subject_{i+1:03d}_{j+1:02d}__x_time.csv', header = None, names = x_time_header)
+            xdata['time'] = xtime['seconds'].values
+            xdataAll.append(xdata)
+
+            # ydata = pd.read_csv(pathin/f'subject_{i+1:03d}_{j+1:02d}__y.csv', header = None, names = y_header)
+            # ydata['session'] = [j+1]*len(ydata)
+            ytime = pd.read_csv(pathin/f'subject_{i+1:03d}_{j+1:02d}__y_time.csv', header = None, names = y_time_header)
+            ydata['time'] = ytime['seconds'].values
+            ydataAll.append(ydata)
+
+        dfx = pd.concat(xdataAll)
+        dfx.index = range(len(dfx))
+        dfy = pd.concat(ydataAll)
+        dfy.index = range(len(dfy))
+
+        dct[f'subject_{i+1}_x'] = dfx
+        dct[f'subject_{i+1}_y'] = dfy
+    return dct
