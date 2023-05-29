@@ -25,8 +25,10 @@ def read_data(pathin):
     nSubjects = 8
 
     for i in range(nSubjects):
+        print(f'Subject {i+1}')
         files = sorted([x for x in filesAll if x.startswith(f'subject_{i+1:03d}')])
         nSessions = int(len(files)/4) ## 4 files per session
+        print(f'  N sessions: {nSessions}')
         
         xdataAll = []
         ydataAll = []
@@ -43,7 +45,9 @@ def read_data(pathin):
             ytime = pd.read_csv(pathin/f'subject_{i+1:03d}_{j+1:02d}__y_time.csv', header = None, names = y_time_header)
             ydata['time'] = ytime['seconds'].values
             ydataAll.append(ydata)
-
+        
+        print(f'    Number of X files: {len(xdataAll)}')
+        print(f'    Number of y files: {len(ydataAll)}')
         dfx = pd.concat(xdataAll)
         dfx.index = range(len(dfx))
         dfy = pd.concat(ydataAll)
@@ -52,6 +56,7 @@ def read_data(pathin):
         dct[f'subject_{i+1}_x'] = dfx
         dct[f'subject_{i+1}_y'] = dfy
     return dct
+
 
 def upsampleData(dct):
     ## Upsample y values, NN interpolation in time column
@@ -63,6 +68,7 @@ def upsampleData(dct):
         dfx = dct[xkey]
         dfy = dct[ykey]
 
+        print(f'subject {k+1}')
         dfout = []
         
         dfunb = pd.DataFrame(index = dfx['session'].unique(), columns = dfy['class'].unique(), data = 0)
@@ -70,21 +76,26 @@ def upsampleData(dct):
 
         i = 0
         for s in dfx['session'].unique():
+            print(f'  upsampling session {s}')
             dfxs = dfx[dfx['session'] == s]
+            print(f'    len X: {len(dfxs)}')
             dfys = dfy[dfy['session'] == s]
+            print(f'    len y: {len(dfys)}')
             distm = cdist(dfxs['time'].values.reshape(len(dfxs), 1), dfys['time'].values.reshape(len(dfys), 1))
             dfxs['class'] = dfys.iloc[distm.argmin(1), 0].values
             dfxs['class_time'] = dfys.iloc[distm.argmin(1), 2].values
             del distm
             dfxs.index = range(i, len(dfxs)+i)
+            print(f'    len data: {len(dfxs)}')
             dfout.append(dfxs)
             i += len(dfxs)
         dfout = pd.concat(dfout, axis = 0)
+        print(f'    len total data subject {k+1}: {len(dfout)}')
         dct_ups[f'subject_{k+1}'] = dfout
     
     return dct_ups
 
-def balanceData(dct, threshold = 2):
+def countBalance(dct, threshold = 2):
 
     dctBal = {f'subject_{k+1}':pd.DataFrame(index = range(1, 9), columns = range(0, 4), data = 0) for k in range(8)}
 
